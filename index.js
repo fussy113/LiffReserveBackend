@@ -8,13 +8,24 @@
 */
 
 const aws = require('aws-sdk')
-aws.config.region = 'ap-northeast-1';
-const s3 = new aws.S3();
+const s3 = new aws.S3({ apiVersion: '2006-03-01' })
 
-// let querystring = require('querystring')
+aws.config.region = 'ap-northeast-1'
 
-exports.handler = function(event, context) {
-    // const S3_BUCKET_NAME = 'liff_reserve_data'
-    let post_data = JSON.stringify(event.reserve_data)
-    context.succeed(post_data)
+exports.handler = async (event, context, callback) => {
+  let post_data = {
+    Bucket: process.env.S3_BUCKET_NAME || 'liff-reserve-data',
+    Key: event.reserve_data.user_id + '.json',
+    Body: JSON.stringify(event.reserve_data),
+    ContentType: 'application/json',
+    ACL: 'public-read-write'
+  }
+  try {
+    let putResult = await s3.putObject(post_data).promise()
+  } catch (err) {
+    console.log(err, err.stack);
+    context.fail()
+  }
+  console.log('success', post_data)
+  context.done()
 }
